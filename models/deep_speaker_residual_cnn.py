@@ -1,6 +1,7 @@
 from keras import backend as K
 from keras.layers import Conv2D, BatchNormalization, add, Lambda, Dense
-from utils import ClippedRelu
+
+from utils.utils import ClippedRelu
 
 
 def deep_speaker_residual_block(inp, filters, kernel_size=(3, 3), strides=(1, 1), clip_value=20):
@@ -47,4 +48,3 @@ def deep_speaker_residual_cnn(inp, filters=None, kernel_size=(5, 5), strides=(2,
     x = Lambda(lambda y: K.l2_normalize(y, axis=-1))(x)
 
     return x
-
