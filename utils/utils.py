@@ -3,6 +3,7 @@ import threading
 
 import librosa
 import numpy as np
+import python_speech_features
 from keras import backend as K
 from keras.engine.topology import Layer
 from pydub import AudioSegment
@@ -22,20 +23,49 @@ def normalize(x):
     return (x - np.mean(x)) / np.std(x)
 
 
-def get_mfcc(y, sr, n_mfcc=20, tgt_sr=16000, win_len=0.025,
-             hop_len=0.010, n_fft=512, n_mels=128, fmin=0.0, fmax=8000.0, delta=False, delta_delta=False):
+def get_mel_spectrogram(y, sr, tgt_sr=16000, win_len=0.025,
+                        hop_len=0.010, n_fft=512, n_mels=128, fmin=0.0, fmax=8000.0, log_mel=True):
     if sr != 16000.0:
         y = librosa.core.resample(y, orig_sr=sr, target_sr=16000)
     spectrogram, phase = librosa.magphase(
         librosa.stft(y, n_fft=n_fft, hop_length=int(hop_len * tgt_sr), win_length=int(win_len * tgt_sr)))
     mel_spectrogram = librosa.feature.melspectrogram(S=spectrogram, n_mels=n_mels, fmin=fmin, fmax=fmax)
-    mfcc = librosa.feature.mfcc(S=librosa.power_to_db(mel_spectrogram), n_mfcc=n_mfcc)
-    features = [mfcc]
+    if log_mel:
+        return normalize(librosa.power_to_db(mel_spectrogram).T)
+    else:
+        return normalize(mel_spectrogram.T)
+
+
+def get_mfcc_v1(y, sr, n_mfcc=13, tgt_sr=16000, win_len=0.025,
+                hop_len=0.010, n_fft=512, n_mels=22, fmin=0.0, fmax=None, delta=False, delta_delta=False):
+    if sr != 16000.0:
+        y = librosa.core.resample(y, orig_sr=sr, target_sr=16000)
+    spectrogram, phase = librosa.magphase(
+        librosa.stft(y, n_fft=n_fft, hop_length=int(hop_len * tgt_sr), win_length=int(win_len * tgt_sr)))
+    mel_spectrogram = librosa.feature.melspectrogram(S=spectrogram, n_mels=n_mels, fmin=fmin, fmax=fmax)
+    mfccs = librosa.feature.mfcc(S=librosa.power_to_db(mel_spectrogram), n_mfcc=n_mfcc)
+    features = [mfccs]
     if delta:
-        features.append(librosa.feature.delta(mfcc, order=1))
+        features.append(librosa.feature.delta(mfccs, order=1))
     if delta_delta:
-        features.append(librosa.feature.delta(mfcc, order=2))
+        features.append(librosa.feature.delta(mfccs, order=2))
     return np.vstack(features).T
+
+
+def get_mfcc_v2(y, sr, n_mfcc=13, tgt_sr=16000, win_len=0.025, hop_len=0.010, n_fft=512, n_mels=22,
+                fmin=0.0, fmax=None, cep_lifter=22, pre_emph=0.97, win_func=lambda x: np.ones((x,)),
+                append_energy=True, delta=True, delta_delta=True):
+    if sr != 16000.0:
+        y = librosa.core.resample(y, orig_sr=sr, target_sr=16000)
+    mfccs = python_speech_features.mfcc(y, tgt_sr, winlen=win_len, winstep=hop_len, numcep=n_mfcc, nfilt=n_mels,
+                                        nfft=n_fft, lowfreq=fmin, highfreq=fmax, preemph=pre_emph, ceplifter=cep_lifter,
+                                        appendEnergy=append_energy, winfunc=win_func)
+    features = [mfccs]
+    if delta:
+        features.append(python_speech_features.delta(mfccs, 1))
+    if delta_delta:
+        features.append(python_speech_features.delta(mfccs, 2))
+    return np.hstack(features)
 
 
 def get_energy(y, sr, tgt_sr=16000, win_len=0.025, hop_len=0.010, n_fft=512, delta=False, delta_delta=False):
@@ -81,7 +111,7 @@ def remove_silence(sound, silence_threshold=-50.0, chunk_size=10):
     return clip
 
 
-class threadsafe_iter:
+class ThreadSafeIter:
     """Takes an iterator/generator and makes it thread-safe by
     serializing call to the `next` method of given iterator/generator.
     """
@@ -103,6 +133,6 @@ def threadsafe_generator(f):
     """
 
     def g(*a, **kw):
-        return threadsafe_iter(f(*a, **kw))
+        return ThreadSafeIter(f(*a, **kw))
 
     return g
