@@ -1,9 +1,11 @@
 import os
 import threading
+import logging
 
 import librosa
 import numpy as np
 import python_speech_features
+import tensorflow as tf
 from keras import backend as K
 from keras.engine.topology import Layer
 from pydub import AudioSegment
@@ -136,3 +138,13 @@ def threadsafe_generator(f):
         return ThreadSafeIter(f(*a, **kw))
 
     return g
+
+
+# Make directories in a filename
+def mkdir(filename):
+    if not os.path.exists(os.path.dirname(filename)):
+        try:
+            tf.gfile.MakeDirs(os.path.dirname(filename))
+        except Exception as ex:
+            logging.exception(ex)
+            pass
