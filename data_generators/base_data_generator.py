@@ -63,15 +63,15 @@ class BaseBatchGenerator(object):
     @threadsafe_generator
     def generator(self):
         speaker_files = self.speaker_files.keys()
-        x = np.array([]).reshape((0, self.frames, self.dim))
-        y = np.array([])
         while True:
+            x = np.array([]).reshape((0, self.frames, self.dim))
+            y = np.array([])
             speakers_ids = random.sample(speaker_files, self.file_batch_size)
             logging.info("Speaker indices trained on: {}".format(speakers_ids))
-            for j, i in enumerate(speakers_ids):
+            for i in speakers_ids:
                 x = np.vstack([x, self.speaker_features[i][0]])
                 y = np.append(y, self.speaker_features[i][1])
             logging.info("Features shape: {}".format(x.shape))
-            for i in range(x.shape[0] - self.batch_size):
-                yield np.expand_dims(x[i: i + self.batch_size], -1), \
-                      to_categorical(y[i: i + self.batch_size], num_classes=self.num_speakers)
+            for i in range(0, x.shape[0] - self.batch_size, self.batch_size):
+                yield np.expand_dims(x[i: i + self.batch_size], -1), to_categorical(y[i: i + self.batch_size],
+                                                                                    num_classes=self.num_speakers)
