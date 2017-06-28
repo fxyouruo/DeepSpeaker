@@ -8,7 +8,7 @@ from utils.utils import ClippedRelu
 def conv_bn_block(inp_shape, filters=5, kernel_size=(9, 5), strides=(1, 1), clip_value=6, dropout=0.75, name='conv_bn'):
     layers = [
         Conv2D(filters=filters, kernel_size=kernel_size,
-               strides=strides, input_shape=inp_shape, activation='relu', padding='same'),
+               strides=strides, input_shape=inp_shape, padding='same'),
         BatchNormalization(),
         ClippedRelu(clip_value=clip_value),
         Dropout(dropout)
@@ -36,12 +36,12 @@ def deep_voice_speaker_model(inp_shape, filters=32, kernel_size=(9, 5), strides=
     # max pooling
     model.add(MaxPool2D(pool_size=pool_size, strides=maxpool_strides))
 
-    # Todo
     # temporal average
-    # model.add(Lambda(lambda y: K.mean(y, axis=1)))
-    model.add(GlobalAveragePooling2D())
+    model.add(Lambda(lambda y: K.mean(y, axis=1)))
+
     # flatten
-    # model.add(Flatten())
+    model.add(Flatten())
+
     # dnn
     model.add(Dense(units=dnn_units, activation='relu'))
 

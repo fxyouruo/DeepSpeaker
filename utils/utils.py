@@ -31,9 +31,9 @@ def get_mel_spectrogram(y, sr, tgt_sr=16000, win_len=0.025,
         librosa.stft(y, n_fft=n_fft, hop_length=int(hop_len * tgt_sr), win_length=int(win_len * tgt_sr)))
     mel_spectrogram = librosa.feature.melspectrogram(S=spectrogram, n_mels=n_mels, fmin=fmin, fmax=fmax)
     if log_mel:
-        return normalize(librosa.power_to_db(mel_spectrogram).T)
+        return librosa.power_to_db(mel_spectrogram).T
     else:
-        return normalize(mel_spectrogram.T)
+        return mel_spectrogram.T
 
 
 def get_mfcc_v1(y, sr, n_mfcc=13, tgt_sr=16000, win_len=0.025,

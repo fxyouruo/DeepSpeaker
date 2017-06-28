@@ -72,7 +72,7 @@ class BaseBatchGenerator(object):
                 start_frame = random.randint(0, valid_frames)
                 x[j] = self.speaker_features[i][0][start_frame: start_frame + self.frames]
                 y[j] = self.speaker_features[i][1]
-            yield x, to_categorical(y, num_classes=self.num_speakers)
+            yield np.expand_dims(x, -1), to_categorical(y, num_classes=self.num_speakers)
 
 
 
