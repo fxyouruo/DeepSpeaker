@@ -8,7 +8,7 @@ from keras.losses import categorical_crossentropy
 from keras.metrics import categorical_accuracy
 from keras.optimizers import Adam
 
-from data_generators.timit_data_generator import BaseBatchGenerator
+from data_generators.base_data_generator import BaseBatchGenerator
 from models.deep_voice_speaker_model import deep_voice_speaker_model
 from utils.utils import mkdir, LoggingCallback, SaverCallback
 
@@ -27,7 +27,8 @@ def train(inp_shape, train_batch_generator, val_batch_generator=None,
                        model=model, name='deep_voice_cnn')
     model.fit_generator(train_batch_generator, steps_per_epoch=steps_per_epoch,
                         epochs=epochs, workers=workers, callbacks=[tb_callback, lc, sc],
-                        validation_data=val_batch_generator, validation_steps=val_steps)
+                        validation_data=val_batch_generator, validation_steps=val_steps,
+                        verbose=2)
 
 
 def main(_):
@@ -42,10 +43,10 @@ def main(_):
     """
 
     num_speakers = FLAGS.num_speakers
-    data_gen = BaseBatchGenerator(FLAGS.data_path, num_speakers=num_speakers, frames=FLAGS.frames, file_batch_size=1)
+    data_gen = BaseBatchGenerator(FLAGS.data_path, num_speakers=num_speakers, frames=FLAGS.frames)
     train(inp_shape=(data_gen.frames, data_gen.dim, 1), train_batch_generator=data_gen.generator('train'),
-          num_speakers=num_speakers, conv_rep=FLAGS.conv_rep, dropout=0.0, steps_per_epoch=400,
-          val_batch_generator=data_gen.generator('dev'), val_steps=200)
+          num_speakers=num_speakers, conv_rep=FLAGS.conv_rep, dropout=0.0, steps_per_epoch=200,
+          val_batch_generator=data_gen.generator('dev'), val_steps=100)
 
 
 if __name__ == '__main__':
@@ -53,7 +54,7 @@ if __name__ == '__main__':
     FLAGS = flags.FLAGS
     flags.DEFINE_string('runs_path', "", 'Runs path for tensorboard')
     flags.DEFINE_string('data_path', "/Users/venkatesh/datasets/timit/data/lisa/data/timit/raw/TIMIT/TRAIN/", 'Dataset path')
-    flags.DEFINE_integer('num_speakers', 200, 'Number of speakers')
+    flags.DEFINE_integer('num_speakers', 100, 'Number of speakers')
     flags.DEFINE_integer('frames', 64, 'Number of frames')
     flags.DEFINE_integer('conv_rep', 5, 'Number of conv layers')
     tf.app.run()
