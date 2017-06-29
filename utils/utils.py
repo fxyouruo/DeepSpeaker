@@ -180,6 +180,12 @@ class LoggingCallback(keras.callbacks.Callback):
         msg = "{Epoch: %i} %s" % (epoch, ", ".join("%s: %f" % (k, v) for k, v in logs.items()))
         self.print_fcn(msg)
 
+    def on_batch_end(self, batch, logs=None):
+        if logs is None:
+            logs = {}
+        msg = "{Batch: %i } %s" % (batch, ", ".join("%s: %f" % (k, v) for k, v in logs.items()))
+        self.print_fcn(msg)
+
 
 class SaverCallback(keras.callbacks.Callback):
     def __init__(self, model, saver, save_path, name):
