@@ -1,7 +1,8 @@
+import logging
 import os
 import threading
-import logging
 
+import keras
 import librosa
 import numpy as np
 import python_speech_features
@@ -148,3 +149,29 @@ def mkdir(filename):
         except Exception as ex:
             logging.exception(ex)
             pass
+
+
+class LoggingCallback(keras.callbacks.Callback):
+    def __init__(self, print_fcn=logging.info):
+        keras.callbacks.Callback.__init__(self)
+        self.print_fcn = print_fcn
+
+    def on_epoch_end(self, epoch, logs=None):
+        if logs is None:
+            logs = {}
+        msg = "{Epoch: %i} %s" % (epoch, ", ".join("%s: %f" % (k, v) for k, v in logs.items()))
+        self.print_fcn(msg)
+
+
+class SaverCallback(keras.callbacks.Callback):
+    def __init__(self, model, saver, save_path, name):
+        keras.callbacks.Callback.__init__(self)
+        self.saver = saver
+        self.save_path = save_path
+        self.name = name
+        self.model = model
+
+    def on_epoch_end(self, epoch, logs=None):
+        logging.info("Epoch {}: saving keras and tf models".format(epoch))
+        sess = keras.backend.get_session()
+        self.saver.save(sess, "{}/{}.ckpt".format(self.save_path, 'tf_' + self.name), global_step=epoch)

@@ -2,14 +2,15 @@ import logging
 import os
 import time
 
-from keras.callbacks import ModelCheckpoint
+import tensorflow as tf
 from keras.callbacks import TensorBoard
 from keras.losses import categorical_crossentropy
 from keras.metrics import categorical_accuracy
 from keras.optimizers import Adam
 
-from data_generators.timit_data_generator import TimitBatchGenerator
+from data_generators.timit_data_generator import BaseBatchGenerator
 from models.deep_voice_speaker_model import deep_voice_speaker_model
+from utils.utils import mkdir, LoggingCallback, SaverCallback
 
 
 def train(inp_shape, train_batch_generator, val_batch_generator=None,
@@ -21,13 +22,17 @@ def train(inp_shape, train_batch_generator, val_batch_generator=None,
     model.compile(optimizer=opt, loss=categorical_crossentropy, metrics=[categorical_accuracy])
     logging.info(model.summary())
     tb_callback = TensorBoard(log_dir=os.path.join(runs_dir, 'logs'), write_images=True)
-    checkpointer = ModelCheckpoint(filepath=os.path.join(runs_dir, 'weights.hdf5'), verbose=0, period=10)
+    lc = LoggingCallback()
+    sc = SaverCallback(saver=tf.train.Saver(max_to_keep=10, keep_checkpoint_every_n_hours=0.5), save_path=runs_dir,
+                       model=model, name='deep_voice_cnn')
     model.fit_generator(train_batch_generator, steps_per_epoch=steps_per_epoch,
-                        epochs=epochs, workers=workers, callbacks=[tb_callback, checkpointer],
+                        epochs=epochs, workers=workers, callbacks=[tb_callback, lc, sc],
                         validation_data=val_batch_generator, validation_steps=val_steps)
 
 
-if __name__ == '__main__':
+def main(_):
+    # mkdir(os.path.join(FLAGS.runs_path, "training-log.txt"))
+    # logging.basicConfig(level=logging.INFO, filename=os.path.join(FLAGS.runs_path, "training-log.txt"))
     logging.basicConfig(level=logging.INFO)
 
     """
@@ -36,12 +41,20 @@ if __name__ == '__main__':
     url   : https://arxiv.org/pdf/1705.08947.pdf
     """
 
-    num_speakers = 20
-
-    timit_path = '/Users/venkatesh/datasets/timit/data/lisa/data/timit/raw/TIMIT/TRAIN/'
-    data_gen = TimitBatchGenerator(timit_path, num_speakers=num_speakers, frames=64, file_batch_size=1)
-
+    num_speakers = FLAGS.num_speakers
+    data_gen = BaseBatchGenerator(FLAGS.data_path, num_speakers=num_speakers, frames=FLAGS.frames, file_batch_size=1)
     train(inp_shape=(data_gen.frames, data_gen.dim, 1), train_batch_generator=data_gen.generator('train'),
-          workers=1, num_speakers=num_speakers, conv_rep=2, dropout=0.0, steps_per_epoch=40,
-          val_batch_generator=data_gen.generator('dev'), val_steps=20)
+          num_speakers=num_speakers, conv_rep=FLAGS.conv_rep, dropout=0.0, steps_per_epoch=4,
+          val_batch_generator=data_gen.generator('dev'), val_steps=2)
+
+
+if __name__ == '__main__':
+    flags = tf.app.flags
+    FLAGS = flags.FLAGS
+    flags.DEFINE_string('runs_path', "", 'Runs path for tensorboard')
+    flags.DEFINE_string('data_path', "", 'Dataset path')
+    flags.DEFINE_integer('num_speakers', 20, 'Number of speakers')
+    flags.DEFINE_integer('frames', 64, 'Number of frames')
+    flags.DEFINE_integer('conv_rep', 2, 'Number of conv layers')
+    tf.app.run()
 
