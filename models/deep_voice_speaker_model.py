@@ -9,9 +9,9 @@ def conv_bn_block(inp_shape, filters=5, kernel_size=(9, 5), strides=(1, 1), clip
     layers = [
         Conv2D(filters=filters, kernel_size=kernel_size,
                strides=strides, input_shape=inp_shape, padding='same'),
-        BatchNormalization(),
+        # BatchNormalization(),
         ClippedRelu(clip_value=clip_value),
-        Dropout(dropout)
+        # Dropout(dropout)
     ]
     model = Sequential(layers, name=name)
     return model

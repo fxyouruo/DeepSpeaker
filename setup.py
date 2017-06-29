@@ -24,7 +24,9 @@ class CustomCommands(install):
             self.run_custom_command(['apt-get', 'update'])
             self.run_custom_command(['apt-get', 'install', '-y', 'libhdf5-dev'])
             self.run_custom_command(['apt-get', 'install', '-y', 'build-essential'])
-            self.run_custom_command(['apt-get', 'install', '-y', 'libav-tools'])
+            # self.run_custom_command(['apt-get', 'install', '-y', 'libav-tools'])
+            self.run_custom_command(['apt-get', 'install', '-y', 'ffmpeg'])
+            self.run_custom_command(['apt-get', 'install', '-y', 'libavcodec-extra-53'])
             self.run_custom_command(['apt-get', 'install', '-y', 'mediainfo'])
         except:
             pass
@@ -32,7 +34,8 @@ class CustomCommands(install):
 
 
 if __name__ == '__main__':
-    REQUIRED_PACKAGES = ['numpy', 'keras', 'tensorflow', 'librosa', 'pydub', 'h5py', 'python_speech_features']
+    REQUIRED_PACKAGES = ['numpy', 'keras', 'tensorflow', 'librosa', 'pydub', 'h5py', 'python_speech_features',
+                         'google-cloud-storage']
     setup(
         name='DeepSpeaker',
         version='0.0.1',

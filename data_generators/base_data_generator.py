@@ -31,7 +31,7 @@ class BaseBatchGenerator(object):
         self.file_batch_size = file_batch_size
         self.val_frac = val_frac
 
-        files = list(list_files(dir_path, audio_predicate))
+        files = list(list_files(dir_path, lambda x: audio_predicate(x) and x.find('TIMIT') != -1))
         speakers = list(set([os.path.basename(os.path.split(f)[0]) for f in files]))
         random.shuffle(speakers)
         speakers = dict(zip(speakers[:num_speakers], range(len(speakers[:num_speakers]))))
@@ -51,14 +51,15 @@ class BaseBatchGenerator(object):
         logging.info("Number of speaker files: {}".format(len(self.speaker_files)))
 
         speaker_features_train, speaker_features_dev, speaker_curr_count = {}, {}, defaultdict(float)
-        print(speaker_files_count.keys())
         for i, f in self.speaker_files.items():
+            logging.info("Featurize {}: {}".format(i, f))
             speaker = os.path.basename(os.path.split(f)[0])
             audio = AudioSegment.from_file(gfile.FastGFile(f))
             if silence:
                 audio = remove_silence(audio, silence_threshold=-60.0)
-            sr = float(mediainfo(f)['sample_rate'])
-            speaker_feature = self.feature_extractor(np.array(audio.get_array_of_samples()), sr=sr)
+            sr = float(audio.frame_rate)
+            speaker_feature = self.feature_extractor(np.array(audio.get_array_of_samples(), dtype=float), sr=sr)
+            logging.info("Speaker Feature Shape: {}".format(speaker_feature.shape))
             if speaker_feature is None:
                 continue
             if speaker_curr_count[speaker] < (1.0 - self.val_frac) * speaker_files_count[speaker]:

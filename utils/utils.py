@@ -11,6 +11,7 @@ from keras import backend as K
 from keras.engine.topology import Layer
 from pydub import AudioSegment
 from tensorflow.python.platform import gfile
+from google.cloud import storage
 
 
 class ClippedRelu(Layer):
@@ -86,10 +87,27 @@ def get_energy(y, sr, tgt_sr=16000, win_len=0.025, hop_len=0.010, n_fft=512, del
 
 
 def list_files(base_path, predicate):
-    for folder, subs, files in gfile.Walk(base_path):
-        for filename in files:
-            if predicate(os.path.join(folder, filename)):
-                yield (os.path.join(folder, filename))
+    if base_path.startswith("gs://"):
+        prefix = 'gs://'
+        bucket_name = base_path.split('/')[2]
+        client = storage.Client()
+        bucket = client.get_bucket(bucket_name)
+        for f in bucket.list_blobs():
+            if predicate(f.name):
+                logging.info("Found file: {}".format(prefix + bucket_name + '/' + f.name))
+                yield prefix + bucket_name + '/' + f.name
+    else:
+        for folder, subs, files in os.walk(base_path):
+            for filename in files:
+                if predicate(os.path.join(folder, filename)):
+                    yield (os.path.join(folder, filename))
+
+# def list_files(base_path, predicate):
+#     for folder, subs, files in gfile.Walk(base_path):
+#         for filename in files:
+#             if predicate(os.path.join(folder, filename)):
+#                 logging.info("{}".format(filename))
+#                 yield (os.path.join(folder, filename))
 
 
 def audio_predicate(fname):

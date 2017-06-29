@@ -23,7 +23,7 @@ def train(inp_shape, train_batch_generator, val_batch_generator=None,
     logging.info(model.summary())
     tb_callback = TensorBoard(log_dir=os.path.join(runs_dir, 'logs'), write_images=True)
     lc = LoggingCallback()
-    sc = SaverCallback(saver=tf.train.Saver(max_to_keep=10, keep_checkpoint_every_n_hours=0.5), save_path=runs_dir,
+    sc = SaverCallback(saver=tf.train.Saver(max_to_keep=20, keep_checkpoint_every_n_hours=0.5), save_path=runs_dir,
                        model=model, name='deep_voice_cnn')
     model.fit_generator(train_batch_generator, steps_per_epoch=steps_per_epoch,
                         epochs=epochs, workers=workers, callbacks=[tb_callback, lc, sc],
@@ -44,17 +44,17 @@ def main(_):
     num_speakers = FLAGS.num_speakers
     data_gen = BaseBatchGenerator(FLAGS.data_path, num_speakers=num_speakers, frames=FLAGS.frames, file_batch_size=1)
     train(inp_shape=(data_gen.frames, data_gen.dim, 1), train_batch_generator=data_gen.generator('train'),
-          num_speakers=num_speakers, conv_rep=FLAGS.conv_rep, dropout=0.0, steps_per_epoch=4,
-          val_batch_generator=data_gen.generator('dev'), val_steps=2)
+          num_speakers=num_speakers, conv_rep=FLAGS.conv_rep, dropout=0.0, steps_per_epoch=400,
+          val_batch_generator=data_gen.generator('dev'), val_steps=200)
 
 
 if __name__ == '__main__':
     flags = tf.app.flags
     FLAGS = flags.FLAGS
     flags.DEFINE_string('runs_path', "", 'Runs path for tensorboard')
-    flags.DEFINE_string('data_path', "", 'Dataset path')
-    flags.DEFINE_integer('num_speakers', 20, 'Number of speakers')
+    flags.DEFINE_string('data_path', "/Users/venkatesh/datasets/timit/data/lisa/data/timit/raw/TIMIT/TRAIN/", 'Dataset path')
+    flags.DEFINE_integer('num_speakers', 200, 'Number of speakers')
     flags.DEFINE_integer('frames', 64, 'Number of frames')
-    flags.DEFINE_integer('conv_rep', 2, 'Number of conv layers')
+    flags.DEFINE_integer('conv_rep', 5, 'Number of conv layers')
     tf.app.run()
 
