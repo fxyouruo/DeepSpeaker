@@ -23,7 +23,7 @@ def train(inp_shape, train_batch_generator, val_batch_generator=None,
     logging.info(model.summary())
     tb_callback = TensorBoard(log_dir=os.path.join(runs_dir, 'logs'), write_images=True)
     lc = LoggingCallback()
-    sc = SaverCallback(saver=tf.train.Saver(max_to_keep=20, keep_checkpoint_every_n_hours=0.1),
+    sc = SaverCallback(saver=tf.train.Saver(max_to_keep=20, keep_checkpoint_every_n_hours=0.5),
                        save_path=runs_dir,
                        model=model, name='deep_voice_cnn')
     model.fit_generator(train_batch_generator, steps_per_epoch=steps_per_epoch,
@@ -33,9 +33,7 @@ def train(inp_shape, train_batch_generator, val_batch_generator=None,
 
 
 def main(_):
-    # mkdir(os.path.join(FLAGS.runs_path, "training-log.txt"))
-    # logging.basicConfig(level=logging.INFO, filename=os.path.join(FLAGS.runs_path, "training-log.txt"))
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO, filename=os.path.join(FLAGS.runs_path, "training-log.txt"))
 
     """
     paper : Deep Voice 2: Multi-Speaker Neural Text-to-SpeechA
@@ -46,22 +44,24 @@ def main(_):
     num_speakers = FLAGS.num_speakers
     pkl_dir = FLAGS.pkl_dir
     data_gen = BaseBatchGenerator(FLAGS.data_path, num_speakers=num_speakers,
-                                  frames=FLAGS.frames, id="TIMIT", pkl_dir=pkl_dir)
-    # data_gen = BaseBatchGenerator(FLAGS.data_path, num_speakers=num_speakers,
-    #                               frames=FLAGS.frames, id="VCTK-Corpus", pkl_dir=pkl_dir)
+                                  frames=FLAGS.frames, id=FLAGS.id, pkl_dir=pkl_dir)
     train(inp_shape=(data_gen.frames, data_gen.dim, 1), train_batch_generator=data_gen.generator('train'),
-          num_speakers=num_speakers, conv_rep=FLAGS.conv_rep, dropout=0.0, steps_per_epoch=400,
-          val_batch_generator=data_gen.generator('dev'), val_steps=200)
+          num_speakers=num_speakers, conv_rep=FLAGS.conv_rep, dropout=FLAGS.dp, steps_per_epoch=FLAGS.steps_per_epoch,
+          val_batch_generator=data_gen.generator('dev'), val_steps=FLAGS.val_steps, runs_dir=FLAGS.runs_path)
 
 
 if __name__ == '__main__':
     flags = tf.app.flags
     FLAGS = flags.FLAGS
     flags.DEFINE_string('runs_path', "", 'Runs path for tensorboard')
-    flags.DEFINE_string('data_path', "/Users/venkatesh/datasets/timit/data/lisa/data/timit/raw/TIMIT/TRAIN/",
-                        'Dataset path')
+    flags.DEFINE_string('data_path', "", 'Dataset path')
     flags.DEFINE_integer('num_speakers', 200, 'Number of speakers')
     flags.DEFINE_integer('frames', 64, 'Number of frames')
     flags.DEFINE_integer('conv_rep', 5, 'Number of conv layers')
+    flags.DEFINE_integer('steps_per_epoch', 200, 'Steps for epoch')
+    flags.DEFINE_integer('val_steps', 100, 'Validation steps')
+    flags.DEFINE_float('dp', 0.0, 'Dropout')
     flags.DEFINE_string('pkl_dir', "", 'Temporary directory to store input data')
+    flags.DEFINE_string('id', "TIMIT", 'Corpus identifier')
     tf.app.run()
+

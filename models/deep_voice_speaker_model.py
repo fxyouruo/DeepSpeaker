@@ -37,13 +37,13 @@ def deep_voice_speaker_model(inp_shape, filters=32, kernel_size=(9, 5), strides=
     model.add(MaxPool2D(pool_size=pool_size, strides=maxpool_strides))
 
     # temporal average
-    model.add(Lambda(lambda y: K.mean(y, axis=1)))
+    model.add(Lambda(lambda y: K.mean(y, axis=1), name="temporal_average"))
 
     # flatten
-    model.add(Flatten())
+    model.add(Flatten(name="flatten"))
 
     # dnn
-    model.add(Dense(units=dnn_units, activation='relu'))
+    model.add(Dense(units=dnn_units, activation='relu', name="dense"))
 
     # softmax
     model.add(Dense(units=num_speakers, activation='softmax'))
