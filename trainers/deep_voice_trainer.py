@@ -10,7 +10,7 @@ from keras.optimizers import Adam
 
 from data_generators.base_data_generator import BaseBatchGenerator
 from models.deep_voice_speaker_model import deep_voice_speaker_model
-from utils.utils import SaverCallback
+from utils.utils import SaverCallback, LoggingCallback
 
 
 def train(inp_shape, train_batch_generator, val_batch_generator=None,
@@ -22,11 +22,12 @@ def train(inp_shape, train_batch_generator, val_batch_generator=None,
     model.compile(optimizer=opt, loss=categorical_crossentropy, metrics=[categorical_accuracy])
     logging.info(model.summary())
     tb_callback = TensorBoard(log_dir=os.path.join(runs_dir, 'logs'), write_images=True)
-    # lc = LoggingCallback()
-    sc = SaverCallback(saver=tf.train.Saver(max_to_keep=20, keep_checkpoint_every_n_hours=0.5), save_path=runs_dir,
+    lc = LoggingCallback()
+    sc = SaverCallback(saver=tf.train.Saver(max_to_keep=20, keep_checkpoint_every_n_hours=0.1),
+                       save_path=runs_dir,
                        model=model, name='deep_voice_cnn')
     model.fit_generator(train_batch_generator, steps_per_epoch=steps_per_epoch,
-                        epochs=epochs, workers=workers, callbacks=[tb_callback, sc],
+                        epochs=epochs, workers=workers, callbacks=[tb_callback, lc, sc],
                         validation_data=val_batch_generator, validation_steps=val_steps,
                         verbose=0)
 

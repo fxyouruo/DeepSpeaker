@@ -183,7 +183,7 @@ class LoggingCallback(keras.callbacks.Callback):
     def on_batch_end(self, batch, logs=None):
         if logs is None:
             logs = {}
-        msg = "{Batch: %i } %s" % (batch, ", ".join("%s: %f" % (k, v) for k, v in logs.items()))
+        msg = "{Batch: %i} %s" % (batch, ", ".join("%s: %f" % (k, v) for k, v in logs.items()))
         self.print_fcn(msg)
 
 
