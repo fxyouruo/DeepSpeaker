@@ -11,7 +11,7 @@ from pydub import AudioSegment
 from tensorflow.python.platform import gfile
 
 from utils.utils import get_mfcc_v2, threadsafe_generator, normalize
-from utils.utils import list_files, audio_predicate, remove_silence
+from utils.utils import list_files, audio_predicate, remove_silence, mkdir
 
 
 class BaseBatchGenerator(object):
@@ -26,12 +26,13 @@ class BaseBatchGenerator(object):
             features[i] = mfccs[i:i + self.frames].reshape(1, mfccs.shape[1] * self.frames)
         return normalize(features).reshape(-1, self.frames, mfccs.shape[1])
 
-    def __init__(self, dir_path, num_speakers=100, frames=64, silence=False, val_frac=0.2, id="", pkl_dir=""):
+    def __init__(self, dir_path, num_speakers=100, frames=64, silence=True, val_frac=0.2, id="", pkl_dir=""):
         self.frames = frames
         self.num_speakers = num_speakers
         self.val_frac = val_frac
         self.id = id
         self.pkl_dir = os.path.join(pkl_dir, self.id)
+        mkdir(self.pkl_dir, True)
         self.silence = silence
 
         files = list(list_files(dir_path, lambda x: audio_predicate(x) and x.find(self.id) != -1))
@@ -82,7 +83,7 @@ class BaseBatchGenerator(object):
             # logging.info("Featurize {}: {}".format(i, f))
             audio = AudioSegment.from_file(gfile.FastGFile(f))
             if self.silence:
-                audio = remove_silence(audio, silence_threshold=-60.0)
+                audio = remove_silence(audio)
             sr = float(audio.frame_rate)
             speaker_feature = self.feature_extractor(np.array(audio.get_array_of_samples(), dtype=float), sr=sr)
             if speaker_feature is None:
@@ -108,4 +109,3 @@ class BaseBatchGenerator(object):
                 x = np.vstack([x, tup[0]])
                 y = np.append(y, tup[1])
                 yield np.expand_dims(x, -1), to_categorical(y, num_classes=self.num_speakers)
-

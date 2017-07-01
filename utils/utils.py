@@ -159,15 +159,19 @@ def threadsafe_generator(f):
     return g
 
 
-# Make directories in a filename
-def mkdir(filename):
-    if not os.path.exists(os.path.dirname(filename)):
-        try:
-            tf.gfile.MakeDirs(os.path.dirname(filename))
-        except Exception as ex:
-            logging.exception(ex)
-            pass
 
+# Make directories in a filename
+def mkdir(filename, dirname=False):
+    try:
+        if not dirname:
+            if not os.path.exists(os.path.dirname(filename)):
+                tf.gfile.MakeDirs(os.path.dirname(filename))
+        else:
+            if not os.path.exists(filename):
+                tf.gfile.MakeDirs(filename)
+    except Exception as ex:
+        logging.exception(ex)
+        pass
 
 class LoggingCallback(keras.callbacks.Callback):
     def __init__(self, print_fcn=logging.info):
@@ -199,3 +203,8 @@ class SaverCallback(keras.callbacks.Callback):
         logging.info("Epoch {}: saving keras and tf models".format(epoch))
         sess = keras.backend.get_session()
         self.saver.save(sess, "{}/{}.ckpt".format(self.save_path, 'tf_' + self.name), global_step=epoch)
+        try:
+            self.model.save_weights("{}/{}_{}.h5".format(self.save_path, 'keras_' + self.name, epoch))
+        except Exception as ex:
+            logging.exception(ex)
+            pass
